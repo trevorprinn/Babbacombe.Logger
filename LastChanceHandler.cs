@@ -62,6 +62,34 @@ namespace Babbacombe.Logger {
         /// </summary>
         public event EventHandler AppClosing;
 
+        public class MessageLoggedEventArgs : EventArgs {
+            public Traps Trap { get; private set; }
+            public Exception Ex { get; private set; }
+            /// <summary>
+            /// If set to False, the standard handler will not display any message. Defaults to True.
+            /// If Terminating is returned True from a Thread trap no message box is displayed.
+            /// </summary>
+            public bool DisplayMessageBox { get; set; }
+            /// <summary>
+            /// If set to True, the app will be terminated after any other processing of the exception.
+            /// Defaults to False, unless the General trap has been triggered, in which case the value
+            /// it is set to is ignored.
+            /// </summary>
+            public bool Terminating { get; set; }
+
+            public MessageLoggedEventArgs(Traps trap, Exception ex, bool terminating) {
+                Trap = trap;
+                Ex = ex;
+                DisplayMessageBox = true;
+                Terminating = terminating;
+            }
+        }
+        /// <summary>
+        /// Raised when an exception has been logged to allow the app to modify the display
+        /// and/or terminate.
+        /// </summary>
+        public event EventHandler<MessageLoggedEventArgs> MessageLogged;
+
         [Flags]
         public enum Traps { Thread = 1, General = 2, Both = 3 };
 
@@ -91,9 +119,11 @@ namespace Babbacombe.Logger {
                     ThreadException(sender, e);
                 } else {
                     LogFile.Log(e.Exception.ToString());
-                    if (MessageBox.Show(e.Exception.Message + "\r\n\r\nPress Cancel to Exit", "Unexpected Error", MessageBoxButtons.OKCancel, MessageBoxIcon.Error, MessageBoxDefaultButton.Button1) == DialogResult.Cancel) {
-                        try { OnAppClosing(); } catch { }
-                        Environment.Exit(0);
+
+                    var ea = new MessageLoggedEventArgs(Traps.Thread, e.Exception, false);
+                    OnMessageLogged(ea);
+                    if (ea.Terminating || (ea.DisplayMessageBox && MessageBox.Show(e.Exception.Message + "\r\n\r\nPress Cancel to Exit", "Unexpected Error", MessageBoxButtons.OKCancel, MessageBoxIcon.Error, MessageBoxDefaultButton.Button1) == DialogResult.Cancel)) {
+                        terminate();
                     }
                 }
             } catch {
@@ -120,18 +150,24 @@ namespace Babbacombe.Logger {
                     } else {
                         LogFile.Log(ex.ToString());
                     }
+                    var ea = new MessageLoggedEventArgs(Traps.General, ex, e.IsTerminating);
+                    OnMessageLogged(ea);
 
                     string msg = ex == null ? "Unknown Exception" : ex.Message;
                     if (e.IsTerminating) {
-                        MessageBox.Show(msg + "\r\n\r\nThe program is terminating.", "Unexpected Error");
-                    } else if (MessageBox.Show(msg + "\r\n\r\nPress Cancel to Exit the program", "Unexpected Error", MessageBoxButtons.OKCancel, MessageBoxIcon.Error, MessageBoxDefaultButton.Button1) == DialogResult.Cancel) {
-                        try { OnAppClosing(); } catch { }
-                        Environment.Exit(0);
+                        if (ea.DisplayMessageBox) MessageBox.Show(msg + "\r\n\r\nThe program is terminating.", "Unexpected Error");
+                    } else if (ea.Terminating || (ea.DisplayMessageBox && MessageBox.Show(msg + "\r\n\r\nPress Cancel to Exit the program", "Unexpected Error", MessageBoxButtons.OKCancel, MessageBoxIcon.Error, MessageBoxDefaultButton.Button1) == DialogResult.Cancel)) {
+                        terminate();
                     }
                 }
             } catch {
                 // Can't do anything with an exception in here.
             }
+        }
+
+        private void terminate() {
+            try { OnAppClosing(); } catch { }
+            Environment.Exit(0);
         }
 
         /// <summary>
@@ -140,6 +176,15 @@ namespace Babbacombe.Logger {
         /// </summary>
         protected virtual void OnAppClosing() {
             if (AppClosing != null) AppClosing(this, EventArgs.Empty);
+        }
+
+        /// <summary>
+        /// Called when an exception has been logged to allow the app to modify the display
+        /// and/or terminate.
+        /// </summary>
+        /// <param name="ea"></param>
+        protected virtual void OnMessageLogged(MessageLoggedEventArgs ea) {
+            if (MessageLogged != null) MessageLogged(this, ea);
         }
     }
 }

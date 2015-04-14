@@ -10,7 +10,8 @@ namespace Babbacombe.Logger {
 
     /// <summary>
     /// Adds top level error handlers that should be able to trap all
-    /// exceptions that are not otherwise trapped.
+    /// exceptions that are not otherwise trapped. An object of this class
+    /// should be created in the app's Main method.
     /// </summary>
     /// <remarks>
     /// Exceptions that occur while handling these exceptions are ignored, as there

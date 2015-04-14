@@ -51,7 +51,9 @@
     <Compile Include="ListenerListBox.Designer.cs" />
     <Compile Include="LogFile.cs" />
     <Compile Include="LogSender.cs" />
+    <Compile Include="MailLogSender.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="WebLogSender.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

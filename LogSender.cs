@@ -27,31 +27,21 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Forms;
 
 using ICSharpCode.SharpZipLib.Zip;
 
 namespace Babbacombe.Logger {
 
     /// <summary>
-    /// The base class for sending logs and other info to a website as a zip file.
-    /// See WebFiles\index.php in the source for a sample website.
+    /// The base class for sending logs and other info to a website or by email as a zip file.
     /// </summary>
     public abstract class LogSender {
 
         /// <summary>
-        /// Gets the folder where the zip files are stored if sending them to the
-        /// website fails.
+        /// Gets the folder where the zip files are stored if sending them fails.
         /// </summary>
-        public abstract string FaultFolder { get; }
-
-        /// <summary>
-        /// Gets the url of the website to send the zip files to.
-        /// </summary>
-        public abstract string FaultReportUrl { get; }
+        protected abstract string FaultFolder { get; }
 
         /// <summary>
         /// Collates the files to be sent in the zip as a set of calls to
@@ -61,14 +51,37 @@ namespace Babbacombe.Logger {
         protected abstract void CollateFiles(ZipOutputStream outputStream);
 
         /// <summary>
-        /// Gathers the required info into a zip file and attempts to send it to
-        /// the website, saving it to FaultFolder if the attempt fails.
+        /// Sends a single zip.
+        /// </summary>
+        /// <param name="dataStream"></param>
+        /// <returns></returns>
+        protected abstract bool SendZip(Stream dataStream);
+
+        /// <summary>
+        /// Sends zips that previously failed to send.
+        /// </summary>
+        /// <param name="zips"></param>
+        public abstract void SendUnsentFiles(IEnumerable<FileInfo> zips);
+
+        /// <summary>
+        /// Gets a list of files that have previously failed to send.
+        /// </summary>
+        /// <returns></returns>
+        protected IEnumerable<FileInfo> GetUnsentFiles() {
+            var dir = new DirectoryInfo(FaultFolder);
+            if (!dir.Exists) return new FileInfo[0];
+            return dir.GetFiles();
+        }
+
+        /// <summary>
+        /// Gathers the required info into a zip file and attempts to send it, 
+        /// saving it to FaultFolder if the attempt fails.
         /// </summary>
         /// <returns>True if successful</returns>
         public bool Send() {
-            using (var datas = getData()) {
-                if (!sendStream(datas)) {
-                    saveInfoToFile(datas);
+            using (var datas = GetData()) {
+                if (!SendZip(datas)) {
+                    SaveInfoToFile(datas);
                     return false;
                 }
             }
@@ -79,55 +92,14 @@ namespace Babbacombe.Logger {
         /// True if there are unsent zip files in the FaultFolder.
         /// </summary>
         public bool HasUnsentFiles {
-            get {
-                var dir = new DirectoryInfo(FaultFolder);
-                if (!dir.Exists) return false;
-                return dir.GetFiles().Any();
-            }
-        }
-
-        /// <summary>
-        /// If there are unsent zip files in the Fault Folder, attempts to send them to the website.
-        /// </summary>
-        public void SendAnyOldFiles() {
-            var dir = new DirectoryInfo(FaultFolder);
-            if (!dir.Exists) return;
-            foreach (var file in dir.GetFiles()) {
-                try { LogFile.Log("Trying to send existing fault report " + file.Name); } catch { }
-                using (var s = file.OpenRead()) {
-                    if (!sendStream(s)) return;
-                }
-                file.Delete();
-            }
-            dir.Delete(true);
-            LogFile.Log("Sent all existing fault reports");
-        }
-
-        /// <summary>
-        /// Uploads the zip file to the website.
-        /// </summary>
-        /// <param name="inStream">The zip stream to send.</param>
-        /// <returns>True if sent, False if the attempt fails.</returns>
-        private bool sendStream(Stream inStream) {
-            try {
-                // Note that the file name isn't used at the far end.
-                using (var resp = uploadZip(FaultReportUrl, inStream, "Report.zip")) {
-                    if (resp.StatusCode != HttpStatusCode.OK) {
-                        LogFile.Log("Attempt to send fault returned " + resp.StatusDescription);
-                    }
-                    return resp.StatusCode == HttpStatusCode.OK;
-                }
-            } catch (Exception ex) {
-                LogFile.Log(ex.ToString());
-                return false;
-            }
+            get { return GetUnsentFiles().Any(); }
         }
 
         /// <summary>
         /// Collates the data into a zip stream and returns it as a memory stream.
         /// </summary>
         /// <returns></returns>
-        private Stream getData() {
+        protected Stream GetData() {
             MemoryStream mStream = new MemoryStream();
             using (ZipOutputStream zStream = new ZipOutputStream(mStream)) {
                 CollateFiles(zStream);
@@ -140,7 +112,7 @@ namespace Babbacombe.Logger {
         /// Saves the zip stream to a file in FaultFolder.
         /// </summary>
         /// <param name="dataStream"></param>
-        private void saveInfoToFile(Stream dataStream) {
+        protected void SaveInfoToFile(Stream dataStream) {
             try {
                 dataStream.Seek(0, SeekOrigin.Begin);
                 if (!Directory.Exists(FaultFolder)) Directory.CreateDirectory(FaultFolder);
@@ -223,33 +195,6 @@ namespace Babbacombe.Logger {
                 s.AppendLine(); s.AppendLine();
             }
             SendString(zs, filename, s.ToString());
-        }
-
-        /// <summary>
-        /// Uploads the stream data to the website as a zip file.
-        /// </summary>
-        /// <param name="hostSite"></param>
-        /// <param name="data"></param>
-        /// <param name="filename"></param>
-        /// <returns></returns>
-        private HttpWebResponse uploadZip(string hostSite, Stream data, string filename) {
-            var req = (HttpWebRequest)WebRequest.Create(hostSite);
-            req.Method = "POST";
-            string delim = string.Format("{0}{1}", new string('-', 10), Guid.NewGuid().ToString());
-            req.ContentType = "multipart/form-data; boundary=" + delim;
-            var shead = new StringBuilder();
-            shead.AppendFormat("--{0}\r\n", delim);
-            shead.AppendFormat("Content-Disposition: form-data; name=\"file\"; {0}\r\n", filename);
-            shead.Append("Content-Type: application/x-zip-compressed\r\n\r\n");
-            var header = Encoding.UTF8.GetBytes(shead.ToString());
-            var footer = Encoding.ASCII.GetBytes(string.Format("\r\n--{0}--\r\n", delim));
-            var contentLen = header.Length + data.Length + footer.Length;
-            using (var reqStream = req.GetRequestStream()) {
-                reqStream.Write(header, 0, header.Length);
-                data.CopyTo(reqStream);
-                reqStream.Write(footer, 0, footer.Length);
-                return (HttpWebResponse)req.GetResponse();
-            }
         }
     }
 }

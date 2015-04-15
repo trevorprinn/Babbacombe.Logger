@@ -29,6 +29,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Babbacombe.Logger {
@@ -59,16 +60,20 @@ namespace Babbacombe.Logger {
         /// </summary>
         public bool UseUtc { get; private set; }
 
+        private Mutex _mutex;
+
         /// <summary>
         /// Creates a new log file, or appends to an existing one.
         /// </summary>
         /// <param name="filename"></param>
-        public LogFile(string filename, bool useUtc = true, bool autoFlush = true) {
+        public LogFile(string filename, bool useUtc = true, bool useMutex = false, bool autoFlush = true) {
             _filename = filename;
-            var fs = File.Open(filename, FileMode.Append, FileAccess.Write, FileShare.Read);
+            var fs = File.Open(filename, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
             _output = new StreamWriter(fs);
             AutoFlush = autoFlush;
             UseUtc = useUtc;
+
+            if (useMutex) _mutex = new Mutex(false, @"Global\BabLogger");
         }
 
         /// <summary>
@@ -78,9 +83,9 @@ namespace Babbacombe.Logger {
         /// <param name="useUtc"></param>
         /// <param name="autoFlush"></param>
         /// <returns></returns>
-        public static LogFile CreateDailyLog(string logFolder, bool useUtc = true, bool autoFlush = true) {
+        public static LogFile CreateDailyLog(string logFolder, bool useUtc = true, bool useMutex  = false, bool autoFlush = true) {
             DateTime date = useUtc ? DateTime.UtcNow.Date : DateTime.Now.Date;
-            var log = new LogFile(getDailyLogName(logFolder, date), useUtc, autoFlush);
+            var log = new LogFile(getDailyLogName(logFolder, date), useUtc, useMutex, autoFlush);
             log._dailyDate = date;
             log._isDaily = true;
             log._timeFormat = "{0:HH:mm:ss} - ";
@@ -100,35 +105,46 @@ namespace Babbacombe.Logger {
         /// <param name="useUtc"></param>
         /// <param name="autoFlush"></param>
         /// <returns></returns>
-        public static LogFile CreateRollingLog(string filename, int maxSize, bool useUtc = true, bool autoFlush = true) {
+        public static LogFile CreateRollingLog(string filename, int maxSize, bool useUtc = true, bool useMutex = false, bool autoFlush = true) {
             var info = new FileInfo(filename);
             if (info.Exists && info.Length > maxSize) {
                 var bakname = Path.ChangeExtension(filename, "bak");
                 if (File.Exists(bakname)) File.Delete(bakname);
                 info.MoveTo(bakname);
             }
-            return new LogFile(filename, useUtc, autoFlush);
+            return new LogFile(filename, useUtc, useMutex, autoFlush);
         }
 
         protected override void Dispose(bool disposing) {
             _output.Dispose();
+            if (_mutex != null) _mutex.Dispose();
             base.Dispose(disposing);
         }
 
+        /// <summary>
+        /// True if a mutex is being used to lock the log file across processes.
+        /// </summary>
+        public bool UseMutex { get { return _mutex != null; } }
+
         private void writeLine(string format, params object[] args) {
-            lock (_synchLock) {
-                var now = UseUtc ? DateTime.UtcNow : DateTime.Now;
-                if (_isDaily && now.Date != _dailyDate) {
-                    // It's past midnight, so start a new log file
-                    _output.Dispose();
-                    _filename = getDailyLogName(Path.GetDirectoryName(_filename), now.Date);
-                    var fs = File.Open(_filename, FileMode.Append, FileAccess.Write, FileShare.Read);
-                    _output = new StreamWriter(fs);
-                    _dailyDate = now.Date;
+            try {
+                lock (_synchLock) {
+                    if (_mutex != null) _mutex.WaitOne();
+                    var now = UseUtc ? DateTime.UtcNow : DateTime.Now;
+                    if (_isDaily && now.Date != _dailyDate) {
+                        // It's past midnight, so start a new log file
+                        _output.Dispose();
+                        _filename = getDailyLogName(Path.GetDirectoryName(_filename), now.Date);
+                        var fs = File.Open(_filename, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
+                        _output = new StreamWriter(fs);
+                        _dailyDate = now.Date;
+                    }
+                    _output.Write(_timeFormat, now);
+                    _output.WriteLine(format, args);
+                    if (AutoFlush) _output.Flush();
                 }
-                _output.Write(_timeFormat, now);
-                _output.WriteLine(format, args);
-                if (AutoFlush) Flush();
+            } finally {
+                if (_mutex != null) _mutex.ReleaseMutex();
             }
         }
 
@@ -136,7 +152,12 @@ namespace Babbacombe.Logger {
         /// Flushes the output. This need not be called if AutoFlush is true.
         /// </summary>
         public override void Flush() {
-            lock (_synchLock) _output.Flush();
+            if (_mutex != null) _mutex.WaitOne();
+            try {
+                lock (_synchLock) _output.Flush();
+            } finally {
+                if (_mutex != null) _mutex.ReleaseMutex();
+            }
         }
 
         /// <summary>

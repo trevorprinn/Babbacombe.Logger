@@ -45,7 +45,7 @@ namespace Babbacombe.Logger {
         private object _synchLock = new object();
         private StreamWriter _output;
         private string _filename;
-        private string _timeFormat = "{0:dd-MM-yyyy HH:mm:ss} - ";
+        private string _headerFormat;
 
         private bool _isDaily;
         private DateTime _dailyDate;
@@ -62,6 +62,8 @@ namespace Babbacombe.Logger {
 
         private Mutex _mutex;
 
+        private string _instanceId;
+
         /// <summary>
         /// Creates a new log file, or appends to an existing one.
         /// </summary>
@@ -74,6 +76,8 @@ namespace Babbacombe.Logger {
             UseUtc = useUtc;
 
             if (useMutex) _mutex = new Mutex(false, @"Global\BabLogger");
+
+            constructHeaderFormat();
         }
 
         /// <summary>
@@ -88,7 +92,7 @@ namespace Babbacombe.Logger {
             var log = new LogFile(getDailyLogName(logFolder, date), useUtc, useMutex, autoFlush);
             log._dailyDate = date;
             log._isDaily = true;
-            log._timeFormat = "{0:HH:mm:ss} - ";
+            log.constructHeaderFormat();
             return log;
         }
 
@@ -121,6 +125,14 @@ namespace Babbacombe.Logger {
             base.Dispose(disposing);
         }
 
+        public string InstanceId {
+            get { return _instanceId; }
+            set {
+                _instanceId = value;
+                constructHeaderFormat();
+            }
+        }
+
         /// <summary>
         /// True if a mutex is being used to lock the log file across processes.
         /// </summary>
@@ -139,7 +151,7 @@ namespace Babbacombe.Logger {
                         _output = new StreamWriter(fs);
                         _dailyDate = now.Date;
                     }
-                    _output.Write(_timeFormat, now);
+                    _output.Write(_headerFormat, now, _instanceId);
                     _output.WriteLine(format, args);
                     if (AutoFlush) _output.Flush();
                 }
@@ -148,6 +160,12 @@ namespace Babbacombe.Logger {
             }
         }
 
+        private void constructHeaderFormat() {
+            string f = _isDaily ? "{0:HH:mm:ss} - " : "{0:dd-MM-yyyy HH:mm:ss} - ";
+            if (!string.IsNullOrWhiteSpace(InstanceId)) f += "{1} - ";
+            _headerFormat = f;
+        }
+        
         /// <summary>
         /// Flushes the output. This need not be called if AutoFlush is true.
         /// </summary>

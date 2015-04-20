@@ -102,6 +102,7 @@ namespace Babbacombe.Logger {
         protected Stream GetData() {
             MemoryStream mStream = new MemoryStream();
             using (ZipOutputStream zStream = new ZipOutputStream(mStream)) {
+                zStream.IsStreamOwner = false;
                 CollateFiles(zStream);
             }
             mStream.Seek(0, SeekOrigin.Begin);
@@ -166,7 +167,7 @@ namespace Babbacombe.Logger {
             ZipEntry entry = new ZipEntry(zipfilename);
             entry.DateTime = File.GetLastWriteTimeUtc(filename);
             zs.PutNextEntry(entry);
-            using (var s = new FileStream(filename, FileMode.Open, FileAccess.Read)) {
+            using (var s = new FileStream(filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)) {
                 s.CopyTo(zs);
             }
         }

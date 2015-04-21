@@ -44,6 +44,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="InfoGatherer.cs" />
     <Compile Include="LastChanceHandler.cs" />
     <Compile Include="ListenerListBox.cs">
       <SubType>Component</SubType>

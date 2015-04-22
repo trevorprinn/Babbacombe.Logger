@@ -1,7 +1,7 @@
 Babbacombe.Logger
 =================
 
-A C# 4.5 library for managing error logging and reporting.
+A C# 4.5 library for managing error logging and reporting. (There is also a build for .net 3.5).
 
 Contains components for:
 - Logging trace messages to log files.

@@ -30,7 +30,6 @@ using System.Linq;
 using System.Net;
 using System.Net.Mail;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace Babbacombe.Logger {
     
@@ -133,7 +132,11 @@ namespace Babbacombe.Logger {
             message.Subject = Subject;
             message.Body = Body;
             foreach (var rec in Recipients) message.To.Add(new MailAddress(rec));
+#if NET35
+            if (ReplyTo != null) message.ReplyTo = new MailAddress(ReplyTo);
+#else
             if (ReplyTo != null) message.ReplyToList.Add(new MailAddress(ReplyTo));
+#endif
             return message;
         }
 

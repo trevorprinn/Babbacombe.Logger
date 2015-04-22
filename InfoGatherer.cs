@@ -28,7 +28,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace Babbacombe.Logger {
@@ -73,7 +72,11 @@ namespace Babbacombe.Logger {
                     LogFile.Log(ex.ToString());
                     finfo = "Exception: " + ex.Message;
                 }
+#if NET35
+                if (string.IsNullOrEmpty(finfo)) return;
+#else
                 if (string.IsNullOrWhiteSpace(finfo)) return;
+#endif
                 if (finfo.Contains('\n')) {
                     finfo = "    " + Regex.Replace(finfo, @"\n|(\r\n)", "$0    ");
                     info.AppendLine();

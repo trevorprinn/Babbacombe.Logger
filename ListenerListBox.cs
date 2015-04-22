@@ -30,7 +30,6 @@ using System.Data;
 using System.Drawing;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace Babbacombe.Logger {
@@ -139,7 +138,7 @@ namespace Babbacombe.Logger {
             public override void WriteLine(string message) {
                 lock (_lock) {
                     if (_buf.Length > 0) message = _buf.ToString() + message;
-                    _buf.Clear();
+                    _buf.Length = 0;
                     _listBox.displayMessage(message);
                 }
             }

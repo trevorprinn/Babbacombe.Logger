@@ -147,7 +147,11 @@ namespace Babbacombe.Logger {
         /// <param name="filename">The name to give this file in the zip file.</param>
         /// <param name="data">The data to write into the file in the zip file.</param>
         protected void SendString(ZipOutputStream zs, string filename, string data) {
+#if NET35
+            if (string.IsNullOrEmpty(data)) return;
+#else
             if (string.IsNullOrWhiteSpace(data)) return;
+#endif
             ZipEntry entry = new ZipEntry(filename);
             entry.DateTime = DateTime.UtcNow;
             zs.PutNextEntry(entry);
@@ -185,8 +189,10 @@ namespace Babbacombe.Logger {
             StringBuilder s = new StringBuilder();
             s.AppendFormat("OS Version: {0}", Environment.OSVersion.ToString());
             s.AppendLine();
+#if !NET35
             s.AppendFormat("64 Bit: {0}", Environment.Is64BitOperatingSystem ? "Y" : "N");
             s.AppendLine();
+#endif
             s.AppendFormat("CLR Version: {0}", Environment.Version.ToString());
             s.AppendLine(); s.AppendLine();
             foreach (var ass in AppDomain.CurrentDomain.GetAssemblies()) {

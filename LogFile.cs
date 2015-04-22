@@ -30,7 +30,6 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace Babbacombe.Logger {
     /// <summary>
@@ -140,7 +139,11 @@ namespace Babbacombe.Logger {
         /// <param name="disposing"></param>
         protected override void Dispose(bool disposing) {
             _output.Dispose();
+#if NET35
+            if (_mutex != null) _mutex.Close();
+#else
             if (_mutex != null) _mutex.Dispose();
+#endif
             base.Dispose(disposing);
         }
 
@@ -185,7 +188,11 @@ namespace Babbacombe.Logger {
 
         private void constructHeaderFormat() {
             string f = _isDaily ? "{0:HH:mm:ss} - " : "{0:dd-MM-yyyy HH:mm:ss} - ";
+#if NET35
+            if (!string.IsNullOrEmpty(InstanceId)) f += "{1} - ";
+#else
             if (!string.IsNullOrWhiteSpace(InstanceId)) f += "{1} - ";
+#endif
             _headerFormat = f;
         }
         

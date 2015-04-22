@@ -50,6 +50,9 @@ namespace Babbacombe.Logger {
         [DefaultValue(0), Description("The maximum number of items stored. Zero for no limit")]
         public int MaxItems { get; set; }
 
+        /// <summary>
+        /// Constructor for the Listener List Box control.
+        /// </summary>
         public ListenerListBox() {
             InitializeComponent();
 
@@ -74,6 +77,9 @@ namespace Babbacombe.Logger {
             }
         }
 
+        /// <summary>
+        /// Type of the items in the ListenerListBox.
+        /// </summary>
         public class Item {
             /// <summary>
             /// The full Trace message.
@@ -90,17 +96,26 @@ namespace Babbacombe.Logger {
                 Time = DateTime.UtcNow;
             }
 
-            // Only display the first line of the message.
+            /// <summary>
+            /// Returns the first line of the message.
+            /// </summary>
+            /// <returns></returns>
             public override string ToString() {
                 return Message == null ? null : Message.Split('\r', '\n')[0];
             }
         }
 
+        /// <summary>
+        /// The typed items in the list box.
+        /// </summary>
         [Browsable(false)]
         public new IEnumerable<Item> Items {
             get { return base.Items.Cast<Item>(); }
         }
 
+        /// <summary>
+        /// The typed item selected in the list box.
+        /// </summary>
         [Browsable(false)]
         public new Item SelectedItem {
             get { return (Item)base.SelectedItem; }

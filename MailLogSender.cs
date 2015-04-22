@@ -97,6 +97,11 @@ namespace Babbacombe.Logger {
         /// </summary>
         protected virtual string ReplyTo { get { return null; } }
 
+        /// <summary>
+        /// Sends a zip to the smtp server.
+        /// </summary>
+        /// <param name="dataStream"></param>
+        /// <returns></returns>
         protected override bool SendZip(Stream dataStream) {
             try {
                 using (var smtp = createClient())

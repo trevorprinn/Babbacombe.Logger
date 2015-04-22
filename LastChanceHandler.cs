@@ -62,8 +62,17 @@ namespace Babbacombe.Logger {
         /// </summary>
         public event EventHandler AppClosing;
 
+        /// <summary>
+        /// Arguments for MessageLogged event.
+        /// </summary>
         public class MessageLoggedEventArgs : EventArgs {
+            /// <summary>
+            /// Gets which trap type has been triggered.
+            /// </summary>
             public Traps Trap { get; private set; }
+            /// <summary>
+            /// Gets the exception that triggered the trap.
+            /// </summary>
             public Exception Ex { get; private set; }
             /// <summary>
             /// If set to False, the standard handler will not display any message. Defaults to True.
@@ -77,6 +86,12 @@ namespace Babbacombe.Logger {
             /// </summary>
             public bool Terminating { get; set; }
 
+            /// <summary>
+            /// Constructor for MessageLogged event arguments.
+            /// </summary>
+            /// <param name="trap">Which trap triggered the event.</param>
+            /// <param name="ex">The exception that triggered the event.</param>
+            /// <param name="terminating">Whether the app is being terminated by the system.</param>
             public MessageLoggedEventArgs(Traps trap, Exception ex, bool terminating) {
                 Trap = trap;
                 Ex = ex;
@@ -90,8 +105,24 @@ namespace Babbacombe.Logger {
         /// </summary>
         public event EventHandler<MessageLoggedEventArgs> MessageLogged;
 
+        /// <summary>
+        /// The types of trap that can be set.
+        /// </summary>
         [Flags]
-        public enum Traps { Thread = 1, General = 2, Both = 3 };
+        public enum Traps {
+            /// <summary>
+            /// Traps on the main application thread.
+            /// </summary>
+            Thread = 1,
+            /// <summary>
+            /// Traps on exceptions other than on the main application thread.
+            /// </summary>
+            General = 2,
+            /// <summary>
+            /// Both Thread and General traps.
+            /// </summary>
+            Both = 3
+        };
 
         /// <summary>
         /// Adds handlers for otherwise untrapped exceptions.

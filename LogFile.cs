@@ -89,8 +89,7 @@ namespace Babbacombe.Logger {
         /// <summary>
         /// Creates a daily log, where the messages are sent to a dated log file.
         /// </summary>
-        /// <param name="subFolderName">The subfolder to write the logs to. Must already exist.</param>
-        /// <param name="filename">The full path of the log file</param>
+        /// <param name="logFolder">The subfolder to write the logs to. Must already exist.</param>
         /// <param name="useUtc">Whether to use UTC or local time. Defaults to true.</param>
         /// <param name="useMutex">
         /// Whether to use a Mutex to control concurrent writing to the log file by another application
@@ -116,6 +115,7 @@ namespace Babbacombe.Logger {
         /// size exceeds maxSize at the point the LogFile is created.
         /// </summary>
         /// <param name="filename">The fuill path of the log file.</param>
+        /// <param name="maxSize">The maximum size after which to create a new log file.</param>
         /// <param name="useUtc">Whether to use UTC or local time. Defaults to true.</param>
         /// <param name="useMutex">
         /// Whether to use a Mutex to control concurrent writing to the log file by another application
@@ -134,6 +134,10 @@ namespace Babbacombe.Logger {
             return new LogFile(filename, useUtc, useMutex, autoFlush);
         }
 
+        /// <summary>
+        /// Closes the output stream and disposes of any mutex.
+        /// </summary>
+        /// <param name="disposing"></param>
         protected override void Dispose(bool disposing) {
             _output.Dispose();
             if (_mutex != null) _mutex.Dispose();
@@ -206,14 +210,28 @@ namespace Babbacombe.Logger {
             writeLine(format, args);
         }
 
+        /// <summary>
+        /// Writes the string to the log (NB writes it as a line).
+        /// </summary>
+        /// <param name="message"></param>
         public override void Write(string message) {
             writeLine(message);
         }
 
+        /// <summary>
+        /// Writes a line to the log.
+        /// </summary>
+        /// <param name="message"></param>
         public override void WriteLine(string message) {
             writeLine(message);
         }
 
+        /// <summary>
+        /// Writes a line to the Trace object, which will also log it if any LogFile
+        /// objects are Trace Listeners.
+        /// </summary>
+        /// <param name="format"></param>
+        /// <param name="args"></param>
         public static void Log(string format, params object[] args) {
             System.Diagnostics.Trace.WriteLine(string.Format(format, args));
         }

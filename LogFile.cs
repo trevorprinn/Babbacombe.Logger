@@ -36,7 +36,7 @@ namespace Babbacombe.Logger {
     /// <summary>
     /// Manages writing to a log file. The output stream is kept open as long as the LogFile
     /// object exists. The log file can be read externally while the LogFile object has it open.
-    /// All messages written have the current date time prepended. The log file can be made a trace
+    /// All messages written are prefixed with the current date time. The log file can be made a trace
     /// listener, so that all Trace messages are written to it, and contains a static method for
     /// writing to Trace.
     /// </summary>
@@ -67,7 +67,13 @@ namespace Babbacombe.Logger {
         /// <summary>
         /// Creates a new log file, or appends to an existing one.
         /// </summary>
-        /// <param name="filename"></param>
+        /// <param name="filename">The full path of the log file</param>
+        /// <param name="useUtc">Whether to use UTC or local time. Defaults to true.</param>
+        /// <param name="useMutex">
+        /// Whether to use a Mutex to control concurrent writing to the log file by another application
+        /// or multiple instances of the same application. Defaults to false.
+        /// </param>
+        /// <param name="autoFlush">Whether to flush the log to disk after each message is written. Defaults to true.</param>
         public LogFile(string filename, bool useUtc = true, bool useMutex = false, bool autoFlush = true) {
             _filename = filename;
             var fs = File.Open(filename, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
@@ -83,9 +89,14 @@ namespace Babbacombe.Logger {
         /// <summary>
         /// Creates a daily log, where the messages are sent to a dated log file.
         /// </summary>
-        /// <param name="subFolderName"></param>
-        /// <param name="useUtc"></param>
-        /// <param name="autoFlush"></param>
+        /// <param name="subFolderName">The subfolder to write the logs to. Must already exist.</param>
+        /// <param name="filename">The full path of the log file</param>
+        /// <param name="useUtc">Whether to use UTC or local time. Defaults to true.</param>
+        /// <param name="useMutex">
+        /// Whether to use a Mutex to control concurrent writing to the log file by another application
+        /// or multiple instances of the same application. Defaults to false.
+        /// </param>
+        /// <param name="autoFlush">Whether to flush the log to disk after each message is written. Defaults to true.</param>
         /// <returns></returns>
         public static LogFile CreateDailyLog(string logFolder, bool useUtc = true, bool useMutex  = false, bool autoFlush = true) {
             DateTime date = useUtc ? DateTime.UtcNow.Date : DateTime.Now.Date;
@@ -104,10 +115,14 @@ namespace Babbacombe.Logger {
         /// Creates a rolling log that is backed up (removing any previous backup) when the
         /// size exceeds maxSize at the point the LogFile is created.
         /// </summary>
-        /// <param name="filename"></param>
-        /// <param name="maxSize"></param>
-        /// <param name="useUtc"></param>
-        /// <param name="autoFlush"></param>
+        /// <param name="filename">The fuill path of the log file.</param>
+        /// <param name="useUtc">Whether to use UTC or local time. Defaults to true.</param>
+        /// <param name="useMutex">
+        /// Whether to use a Mutex to control concurrent writing to the log file by another application
+        /// or multiple instances of the same application. Defaults to false.
+        /// </param>
+        /// <param name="autoFlush">Whether to flush the log to disk after each message is written. Defaults to true.</param>
+        /// <returns></returns>
         /// <returns></returns>
         public static LogFile CreateRollingLog(string filename, int maxSize, bool useUtc = true, bool useMutex = false, bool autoFlush = true) {
             var info = new FileInfo(filename);
@@ -125,6 +140,10 @@ namespace Babbacombe.Logger {
             base.Dispose(disposing);
         }
 
+        /// <summary>
+        /// Sets or gets an optional identifier for the application or instance that
+        /// will be added to each message, if set.
+        /// </summary>
         public string InstanceId {
             get { return _instanceId; }
             set {

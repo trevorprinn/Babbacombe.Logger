@@ -1,4 +1,29 @@
-﻿using System;
+﻿#region Licence
+/*
+The MIT License (MIT)
+
+Copyright (c) 2015 Babbacombe Computers Ltd
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+*/
+#endregion
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -36,7 +61,8 @@ namespace Babbacombe.Logger {
         protected virtual bool UseDefaultCredentials { get { return false; } }
 
         /// <summary>
-        /// Gets the username for the email server. Null if authentication is not required.
+        /// Gets the username for the email server. Null, the default, if authentication is not required
+        /// or the default credentials are being used.
         /// </summary>
         protected virtual string SmtpUsername { get { return null; } }
 
@@ -46,12 +72,12 @@ namespace Babbacombe.Logger {
         protected abstract string From { get; }
 
         /// <summary>
-        /// Gets the subject for the email.
+        /// Gets the subject for the email. Defaults to "Error report".
         /// </summary>
         protected virtual string Subject { get { return "Error report"; } }
 
         /// <summary>
-        /// Gets the message body of the email.
+        /// Gets the message body of the email. Defaults to "Log Files are attached".
         /// </summary>
         protected virtual string Body { get { return "Log Files are attached"; } }
 
@@ -106,6 +132,11 @@ namespace Babbacombe.Logger {
             return message;
         }
 
+        /// <summary>
+        /// Attempts to resend unsent zip files by email. All of the unsent files are sent
+        /// as attachments to a single email.
+        /// </summary>
+        /// <param name="zips"></param>
         public override void SendUnsentFiles(IEnumerable<FileInfo> zips) {
             try {
                 using (var smtp = createClient())

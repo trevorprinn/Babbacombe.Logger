@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -13,6 +14,7 @@ namespace Babbacombe.Logger {
                 StringBuilder info = new StringBuilder();
                 // Reversed because the active form comes last.
                 foreach (var f in Application.OpenForms.Cast<Form>().Reverse()) {
+                    if (f.IsMdiChild) continue;
                     gatherFormInfo(info, f);
                     if (f.IsMdiContainer) {
                         foreach (var c in f.MdiChildren) {
@@ -40,7 +42,7 @@ namespace Babbacombe.Logger {
                 }
                 if (string.IsNullOrWhiteSpace(finfo)) return;
                 if (finfo.Contains('\n')) {
-                    finfo = "    " + finfo.Replace("\n", "    \n");
+                    finfo = "    " + Regex.Replace(finfo, @"\n|(\r\n)", "$0    ");
                     info.AppendLine();
                     info.Append(finfo);
                 } else {

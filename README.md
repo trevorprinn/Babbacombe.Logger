@@ -8,3 +8,6 @@ Contains components for:
 - Handling and logging untrapped exceptions on all threads.
 - Displaying trace messages in the UI.
 - Sending log information to a website, from where email notifications can be sent out, or directly by email over SMTP.
+
+Both builds of the library are available from the Babbacombe myget (nuget) feed
+https://www.myget.org/F/babbacom-feed/api/v2

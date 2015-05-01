@@ -46,6 +46,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="FormCollectInfo.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormCollectInfo.Designer.cs">
+      <DependentUpon>FormCollectInfo.cs</DependentUpon>
+    </Compile>
     <Compile Include="InfoGatherer.cs" />
     <Compile Include="LastChanceHandler.cs" />
     <Compile Include="ListenerListBox.cs">
@@ -61,6 +67,11 @@
   <ItemGroup>
     <None Include="packages.config" />
     <None Include="WebFiles\index.php" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="FormCollectInfo.resx">
+      <DependentUpon>FormCollectInfo.cs</DependentUpon>
+    </EmbeddedResource>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

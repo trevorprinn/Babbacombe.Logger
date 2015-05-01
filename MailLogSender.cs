@@ -151,10 +151,9 @@ namespace Babbacombe.Logger {
                 using (var message = createMessage()) {
                     foreach (var zip in zips) message.Attachments.Add(new Attachment(zip.FullName));
                     smtp.Send(message);
-
-                    foreach (var zip in zips) zip.Delete();
-                    Directory.Delete(FaultFolder);
                 }
+                foreach (var zip in zips) zip.Delete();
+                Directory.Delete(FaultFolder);
             } catch (Exception ex) {
                 LogFile.Log(ex.ToString());
             }

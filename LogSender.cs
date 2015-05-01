@@ -64,6 +64,36 @@ namespace Babbacombe.Logger {
         public abstract void SendUnsentFiles(IEnumerable<FileInfo> zips);
 
         /// <summary>
+        /// Sends zips that previously failed to send.
+        /// </summary>
+        public void SendUnsentFiles() {
+            SendUnsentFiles(GetUnsentFiles());
+        }
+
+        /// <summary>
+        /// Event arguments for the AddFiles event.
+        /// </summary>
+        public class AddFilesEventArgs : EventArgs {
+            /// <summary>
+            /// The log sender.
+            /// </summary>
+            public LogSender LogSender { get; private set; }
+            /// <summary>
+            /// The zip stream to write further files to.
+            /// </summary>
+            public ZipOutputStream ZipStream { get; private set; }
+            internal AddFilesEventArgs(LogSender logSender, ZipOutputStream zipStream) {
+                LogSender = logSender;
+                ZipStream = zipStream;
+            }
+        }
+        /// <summary>
+        /// Raised after CollateFiles has been run to allow further files to be added. Call SendStream,
+        /// SendFile and/or SendString within this event.
+        /// </summary>
+        public event EventHandler<AddFilesEventArgs> AddFiles;
+
+        /// <summary>
         /// Gets a list of files that have previously failed to send.
         /// </summary>
         /// <returns></returns>
@@ -103,7 +133,12 @@ namespace Babbacombe.Logger {
             MemoryStream mStream = new MemoryStream();
             using (ZipOutputStream zStream = new ZipOutputStream(mStream)) {
                 zStream.IsStreamOwner = false;
-                CollateFiles(zStream);
+                try {
+                    CollateFiles(zStream);
+                    if (AddFiles != null) AddFiles(this, new AddFilesEventArgs(this, zStream));
+                } catch (Exception ex) {
+                    LogFile.Log(ex.ToString());
+                }
             }
             mStream.Seek(0, SeekOrigin.Begin);
             return mStream;
@@ -128,12 +163,12 @@ namespace Babbacombe.Logger {
 
         /// <summary>
         /// Copies the data in the stream into a new file in the zip.
-        /// Call from CollateFiles.
+        /// Call from CollateFiles or the AddFiles event.
         /// </summary>
         /// <param name="zs">The zip stream passed into CollateFiles.</param>
         /// <param name="filename">The name to give this file in the zip file.</param>
         /// <param name="stream">The stream containing the data to write into the file in the zip file.</param>
-        protected void SendStream(ZipOutputStream zs, string filename, Stream stream) {
+        public void SendStream(ZipOutputStream zs, string filename, Stream stream) {
             ZipEntry entry = new ZipEntry(filename);
             entry.DateTime = DateTime.UtcNow;
             zs.PutNextEntry(entry);
@@ -141,12 +176,12 @@ namespace Babbacombe.Logger {
         }
 
         /// <summary>
-        /// Copies the data into a new file in the zip. Call from CollateFiles.
+        /// Copies the data into a new file in the zip. Call from CollateFiles or the AddFiles event.
         /// </summary>
         /// <param name="zs">The zip stream passed into CollateFiles.</param>
         /// <param name="filename">The name to give this file in the zip file.</param>
         /// <param name="data">The data to write into the file in the zip file.</param>
-        protected void SendString(ZipOutputStream zs, string filename, string data) {
+        public void SendString(ZipOutputStream zs, string filename, string data) {
 #if NET35
             if (string.IsNullOrEmpty(data)) return;
 #else
@@ -160,7 +195,7 @@ namespace Babbacombe.Logger {
         }
 
         /// <summary>
-        /// Copies the file contents into a new file in the zip. Call from CollateFiles.
+        /// Copies the file contents into a new file in the zip. Call from CollateFiles or the AddFiles event.
         /// </summary>
         /// <param name="zs">The zip stream passed into CollateFiles.</param>
         /// <param name="filename">The file to include in the zip file.</param>
@@ -168,7 +203,7 @@ namespace Babbacombe.Logger {
         /// The name to use for the file in the zip file. Defaults to null, which uses the
         /// file name from the filename parameter.
         /// </param>
-        protected void SendFile(ZipOutputStream zs, string filename, string zipfilename = null) {
+        public void SendFile(ZipOutputStream zs, string filename, string zipfilename = null) {
             if (!File.Exists(filename)) return;
             if (zipfilename == null) zipfilename = Path.GetFileName(filename);
             ZipEntry entry = new ZipEntry(zipfilename);

@@ -47,16 +47,19 @@ namespace Babbacombe.Logger {
         /// If there are unsent zip files in the Fault Folder, attempts to send them to the website.
         /// </summary>
         public override void SendUnsentFiles(IEnumerable<FileInfo> zips) {
-            if (!HasUnsentFiles) return;
-            foreach (var file in zips) {
-                try { LogFile.Log("Trying to send existing fault report " + file.Name); } catch { }
-                using (var s = file.OpenRead()) {
-                    if (!SendZip(s)) return;
+            try {
+                foreach (var file in zips) {
+                    try { LogFile.Log("Trying to send existing fault report " + file.Name); } catch { }
+                    using (var s = file.OpenRead()) {
+                        if (!SendZip(s)) return;
+                    }
+                    file.Delete();
                 }
-                file.Delete();
+                Directory.Delete(FaultFolder);
+                LogFile.Log("Sent all existing fault reports");
+            } catch (Exception ex) {
+                LogFile.Log(ex.ToString());
             }
-            Directory.Delete(FaultFolder);
-            LogFile.Log("Sent all existing fault reports");
         }
 
         /// <summary>

@@ -16,8 +16,9 @@
         </dependencies>
     </metadata>
     <files>
+        <file src="bin\Release\Babbacombe.Logger.XML" target="lib\net35\Babbacombe.Logger.XML" />
         <file src="bin\Release\Babbacombe.Logger.35.dll" target="lib\net35\Babbacombe.Logger.dll" />
         <file src="bin\Release\Babbacombe.Logger.dll" target="lib\net45\Babbacombe.Logger.dll" />
-        <file src="bin\Release\Babbacombe.Logger.XML" target="lib\Babbacombe.Logger.XML" />
+        <file src="lib\net45\Babbacombe.Logger.XML" target="lib\net45\Babbacombe.Logger.XML" />
     </files>
 </package>

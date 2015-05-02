@@ -39,10 +39,6 @@ namespace Babbacombe.Logger {
                 components.Dispose();
             }
             base.Dispose(disposing);
-            if (_screenshot != null) {
-                _screenshot.Dispose();
-                _screenshot = null;
-            }
         }
 
         #region Windows Form Designer generated code

@@ -25,9 +25,12 @@ THE SOFTWARE.
 #endregion
 using System;
 using System.Collections.Generic;
+using System.Drawing;
+using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Windows.Forms;
 
 using ICSharpCode.SharpZipLib.Zip;
 
@@ -36,7 +39,8 @@ namespace Babbacombe.Logger {
     /// <summary>
     /// The base class for sending logs and other info to a website or by email as a zip file.
     /// </summary>
-    public abstract class LogSender {
+    public abstract class LogSender : IDisposable {
+        private Bitmap _screenshot;
 
         /// <summary>
         /// Gets the folder where the zip files are stored if sending them fails.
@@ -215,6 +219,23 @@ namespace Babbacombe.Logger {
         }
 
         /// <summary>
+        /// Copies a screenshot of the primary screen into the zip file. GrabScreenshot can
+        /// be called earlier (eg in the constructor) to take the screenshot at that point, otherwise
+        /// it will be taken when this call is made.
+        /// Call from CollateFiles or the AddFiles event.
+        /// </summary>
+        /// <param name="zs">The ZipStream passed into CollateFiles.</param>
+        /// <param name="filename">The name to use for the file in the zip file. Defaults to "screenshot.png".</param>
+        public void SendScreenshot(ZipOutputStream zs, string filename = "screenshot.png") {
+            if (_screenshot == null) GrabScreenshot();
+            using (var mem = new MemoryStream()) {
+                _screenshot.Save(mem, ImageFormat.Png);
+                mem.Seek(0, SeekOrigin.Begin);
+                SendStream(zs, filename, mem);
+            }
+        }
+
+        /// <summary>
         /// Copies various OS details and details of assemblies into a new file in the zip.
         /// Call from CollateFiles.
         /// </summary>
@@ -240,6 +261,44 @@ namespace Babbacombe.Logger {
                 s.AppendLine(); s.AppendLine();
             }
             SendString(zs, filename, s.ToString());
+        }
+
+        /// <summary>
+        /// Saves a screenshot to be used in a SendScreenshot() call subsequently. This can
+        /// be called before displaying any further forms, otherwise it would be called
+        /// automatically by SendScreenshot().
+        /// </summary>
+        public void GrabScreenshot() {
+            _screenshot = new Bitmap(Screen.PrimaryScreen.Bounds.Width,
+                               Screen.PrimaryScreen.Bounds.Height,
+                               PixelFormat.Format32bppArgb);
+            using (var gfxScreenshot = Graphics.FromImage(_screenshot)) {
+                gfxScreenshot.CopyFromScreen(Screen.PrimaryScreen.Bounds.X,
+                                            Screen.PrimaryScreen.Bounds.Y,
+                                            0,
+                                            0,
+                                            Screen.PrimaryScreen.Bounds.Size,
+                                            CopyPixelOperation.SourceCopy);
+            }
+        }
+
+        /// <summary>
+        /// Disposes of any screenshot object.
+        /// </summary>
+        /// <param name="disposing"></param>
+        protected virtual void Dispose(bool disposing) {
+            if (_screenshot != null) {
+                _screenshot.Dispose();
+                _screenshot = null;
+            }
+        }
+
+        /// <summary>
+        /// Disposes of resources used.
+        /// </summary>
+        public void Dispose() {
+            Dispose(true);
+            GC.SuppressFinalize(this);
         }
     }
 }

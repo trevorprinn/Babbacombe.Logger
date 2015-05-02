@@ -73,11 +73,17 @@ namespace Babbacombe.Logger {
         }
 
         private void btnSend_Click(object sender, EventArgs e) {
-            if (_logSender.HasUnsentFiles) {
-                _logSender.SendUnsentFiles();
+            var cursor = Cursor.Current;
+            Cursor.Current = Cursors.WaitCursor;
+            try {
+                if (_logSender.HasUnsentFiles) {
+                    _logSender.SendUnsentFiles();
+                }
+                _logSender.Send();
+                DialogResult = checkExit.Checked ? DialogResult.Abort : DialogResult.OK;
+            } finally {
+                Cursor.Current = cursor;
             }
-            _logSender.Send();
-            DialogResult = checkExit.Checked ? DialogResult.Abort : DialogResult.OK;
         }
 
         private void btnCancel_Click(object sender, EventArgs e) {

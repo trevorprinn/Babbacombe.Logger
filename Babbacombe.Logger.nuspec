@@ -2,13 +2,17 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
     <metadata>
         <id>Babbacombe.Logger</id>
-        <version>1.0.0</version>
+        <version>1.1.0</version>
         <title>Babbacombe Logger</title>
         <authors>Trevor Prinn</authors>
         <licenseUrl>https://github.com/trevorprinn/Babbacombe.Logger/blob/master/LICENSE</licenseUrl>
         <projectUrl>https://github.com/trevorprinn/Babbacombe.Logger</projectUrl>
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <description>Provides exception trapping, logging, displaying and reporting facilities for WinForms apps.</description>
+        <releaseNotes>Fixed adding XML documentation.
+Added sample dialogue for collecting info from the user.
+Added screenshot grabbing.
+Minor fixes.</releaseNotes>
         <copyright>Copyright © Babbacombe Computers Ltd 2015</copyright>
         <tags>exception handling logging reporting</tags>
         <dependencies>
@@ -16,9 +20,9 @@
         </dependencies>
     </metadata>
     <files>
-        <file src="bin\Release\Babbacombe.Logger.XML" target="lib\net35\Babbacombe.Logger.XML" />
         <file src="bin\Release\Babbacombe.Logger.35.dll" target="lib\net35\Babbacombe.Logger.dll" />
+        <file src="bin\Release\Babbacombe.Logger.XML" target="lib\net35\Babbacombe.Logger.XML" />
         <file src="bin\Release\Babbacombe.Logger.dll" target="lib\net45\Babbacombe.Logger.dll" />
-        <file src="lib\net45\Babbacombe.Logger.XML" target="lib\net45\Babbacombe.Logger.XML" />
+        <file src="bin\Release\Babbacombe.Logger.XML" target="lib\net45\Babbacombe.Logger.XML" />
     </files>
 </package>

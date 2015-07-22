@@ -71,7 +71,7 @@ namespace Babbacombe.Logger {
         /// Sends zips that previously failed to send.
         /// </summary>
         public void SendUnsentFiles() {
-            SendUnsentFiles(GetUnsentFiles());
+            if (HasUnsentFiles) SendUnsentFiles(GetUnsentFiles());
         }
 
         /// <summary>

@@ -146,6 +146,7 @@ namespace Babbacombe.Logger {
         /// </summary>
         /// <param name="zips"></param>
         public override void SendUnsentFiles(IEnumerable<FileInfo> zips) {
+            if (zips == null || !zips.Any()) return;
             try {
                 using (var smtp = createClient())
                 using (var message = createMessage()) {

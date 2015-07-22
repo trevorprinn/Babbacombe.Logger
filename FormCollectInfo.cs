@@ -41,6 +41,10 @@ namespace Babbacombe.Logger {
     public partial class FormCollectInfo : Form {
         private LogSender _logSender;
 
+        private FormCollectInfo() {
+            InitializeComponent();
+        }
+
         /// <summary>
         /// Constructor for FormCollectInfo.
         /// </summary>

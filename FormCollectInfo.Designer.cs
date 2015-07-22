@@ -93,6 +93,15 @@ namespace Babbacombe.Logger {
             label3.TabIndex = 5;
             label3.Text = "Email:";
             // 
+            // label4
+            // 
+            label4.AutoSize = true;
+            label4.Location = new System.Drawing.Point(9, 140);
+            label4.Name = "label4";
+            label4.Size = new System.Drawing.Size(38, 13);
+            label4.TabIndex = 11;
+            label4.Text = "Notes:";
+            // 
             // labelExit
             // 
             this.labelExit.AutoSize = true;
@@ -165,15 +174,6 @@ namespace Babbacombe.Logger {
             this.btnCancel.UseVisualStyleBackColor = true;
             this.btnCancel.Click += new System.EventHandler(this.btnCancel_Click);
             // 
-            // label4
-            // 
-            label4.AutoSize = true;
-            label4.Location = new System.Drawing.Point(9, 140);
-            label4.Name = "label4";
-            label4.Size = new System.Drawing.Size(38, 13);
-            label4.TabIndex = 11;
-            label4.Text = "Notes:";
-            // 
             // textNotes
             // 
             this.textNotes.Location = new System.Drawing.Point(56, 140);
@@ -213,14 +213,15 @@ namespace Babbacombe.Logger {
 
         #endregion
 
-        private System.Windows.Forms.Label labelExit;
-        private System.Windows.Forms.Label labelSend;
-        private System.Windows.Forms.TextBox textName;
-        private System.Windows.Forms.TextBox textEmail;
-        private System.Windows.Forms.CheckBox checkScreenshot;
-        private System.Windows.Forms.CheckBox checkExit;
-        private System.Windows.Forms.Button btnSend;
-        private System.Windows.Forms.Button btnCancel;
-        private System.Windows.Forms.TextBox textNotes;
+        protected System.Windows.Forms.Label labelExit;
+        protected System.Windows.Forms.Label labelSend;
+        protected System.Windows.Forms.TextBox textName;
+        protected System.Windows.Forms.TextBox textEmail;
+        protected System.Windows.Forms.CheckBox checkScreenshot;
+        protected System.Windows.Forms.CheckBox checkExit;
+        protected System.Windows.Forms.Button btnSend;
+        protected System.Windows.Forms.Button btnCancel;
+        protected System.Windows.Forms.TextBox textNotes;
+
     }
 }

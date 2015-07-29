@@ -97,9 +97,9 @@ namespace Babbacombe.Logger {
             req.ContentType = "multipart/form-data; boundary=" + delim;
             var shead = new StringBuilder();
             shead.AppendFormat("--{0}\r\n", delim);
-            shead.AppendFormat("Content-Disposition: form-data; name=\"file\"; filename=\"{0}\"\r\n", filename);
+            shead.AppendFormat("Content-Disposition: form-data; name=\"file\"; filename=\"{0}\";\r\n", filename);
             shead.Append("Content-Type: application/x-zip-compressed\r\n\r\n");
-            var header = Encoding.UTF8.GetBytes(shead.ToString());
+            var header = Encoding.ASCII.GetBytes(shead.ToString());
             var footer = Encoding.ASCII.GetBytes(string.Format("\r\n--{0}--\r\n", delim));
             req.ContentLength = header.Length + data.Length + footer.Length;
             using (var reqStream = req.GetRequestStream()) {

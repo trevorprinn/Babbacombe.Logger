@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 $validExtensions = array("zip"); //array("jpg", "jpeg", "txt"); //Set to null to ignore
 $validMimeTypes = null; // array("application/x-zip-compressed"); //array("image/jpeg", "image/pjpeg", "text/plain"); //Set to null to ignore
 $validAddresses = null; //array("127.0.0.1"); //Set to null to ignore

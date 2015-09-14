@@ -25,6 +25,7 @@ THE SOFTWARE.
 #endregion
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -40,11 +41,24 @@ namespace Babbacombe.Logger {
     /// writing to Trace.
     /// </summary>
 
-    public class LogFile : System.Diagnostics.TraceListener {
+    public class LogFile : TraceListener {
         private object _synchLock = new object();
         private StreamWriter _output;
         private string _filename;
         private string _headerFormat;
+
+        /// <summary>
+        /// If logging fails, the Logger will attempt to write a message to the
+        /// Application log using this source name, which will default to the Entry
+        /// Assembly name.
+        /// </summary>
+        /// <remarks>
+        /// Writing to the event log will fail silently on Vista or later unless the source
+        /// has already been added, or the application has been run as Administrator.
+        /// It can most easily be added at installation by using EventLog.SourceExists
+        /// and EventLog.CreateEventSource.
+        /// </remarks>
+        public static string EventLogSource { get; set; }
 
         private bool _isDaily;
         private DateTime _dailyDate;
@@ -166,8 +180,16 @@ namespace Babbacombe.Logger {
 
         private void writeLine(string format, params object[] args) {
             try {
+                writeLine(string.Format(format, args));
+            } catch (Exception ex) {
+                sendToEventLog(ex, format, args);
+            }
+        }
+
+        private void writeLine(string message) {
+            if (_mutex != null) _mutex.WaitOne();
+            try {
                 lock (_synchLock) {
-                    if (_mutex != null) _mutex.WaitOne();
                     var now = UseUtc ? DateTime.UtcNow : DateTime.Now;
                     if (_isDaily && now.Date != _dailyDate) {
                         // It's past midnight, so start a new log file
@@ -178,9 +200,11 @@ namespace Babbacombe.Logger {
                         _dailyDate = now.Date;
                     }
                     _output.Write(_headerFormat, now, _instanceId);
-                    _output.WriteLine(format, args);
+                    _output.WriteLine(message);
                     if (AutoFlush) _output.Flush();
                 }
+            } catch (Exception ex) {
+                sendToEventLog(ex, message);
             } finally {
                 if (_mutex != null) _mutex.ReleaseMutex();
             }
@@ -203,6 +227,8 @@ namespace Babbacombe.Logger {
             if (_mutex != null) _mutex.WaitOne();
             try {
                 lock (_synchLock) _output.Flush();
+            } catch (Exception ex) {
+                sendToEventLog(ex, "Failed to Flush Log File");
             } finally {
                 if (_mutex != null) _mutex.ReleaseMutex();
             }
@@ -240,7 +266,20 @@ namespace Babbacombe.Logger {
         /// <param name="format"></param>
         /// <param name="args"></param>
         public static void Log(string format, params object[] args) {
-            System.Diagnostics.Trace.WriteLine(string.Format(format, args));
+            try {
+                Trace.WriteLine(string.Format(format, args));
+            } catch (Exception ex) {
+                sendToEventLog(ex, format, args);
+            }
+        }
+
+        /// <summary>
+        /// Writes a line to the Trace object, which will also log it if any LogFile
+        /// objects are Trace Listeners.
+        /// </summary>
+        /// <param name="message"></param>
+        public static void Log(string message) {
+            Trace.WriteLine(message);
         }
 
         /// <summary>
@@ -249,7 +288,11 @@ namespace Babbacombe.Logger {
         /// <param name="message"></param>
         /// <param name="o"></param>
         public void DumpObject(string message, object o) {
-            WriteLine(assembleDump(message, o));
+            try {
+                WriteLine(assembleDump(message, o));
+            } catch (Exception ex) {
+                sendToEventLog(ex, message);
+            }
         }
 
         /// <summary>
@@ -258,7 +301,11 @@ namespace Babbacombe.Logger {
         /// <param name="message"></param>
         /// <param name="o"></param>
         public static void Dump(string message, object o) {
-            Log(assembleDump(message, o));
+            try {
+                Log(assembleDump(message, o));
+            } catch (Exception ex) {
+                sendToEventLog(ex, message);
+            }
         }
 
         private static string assembleDump(string message, object o) {
@@ -288,11 +335,50 @@ namespace Babbacombe.Logger {
         /// will automatically log anything written by the Trace object.
         /// </summary>
         public bool IsTraceListener {
-            get { return System.Diagnostics.Trace.Listeners.Contains(this); }
+            get { return Trace.Listeners.Contains(this); }
             set {
-                if (value && !IsTraceListener) System.Diagnostics.Trace.Listeners.Add(this);
-                if (!value && IsTraceListener) System.Diagnostics.Trace.Listeners.Remove(this);
+                if (value && !IsTraceListener) Trace.Listeners.Add(this);
+                if (!value && IsTraceListener) Trace.Listeners.Remove(this);
             }
+        }
+
+        private static void sendToEventLog(string message) {
+            try {
+                if (EventLogSource == null) {
+                    EventLogSource = Path.GetFileNameWithoutExtension(Assembly.GetEntryAssembly().Location);
+                    // SourceExists/CreateEventSource won't work on Vista and later.
+                    // After XP, the EventSource has to be created as Administrator.
+                    if (!EventLog.SourceExists(EventLogSource)) EventLog.CreateEventSource(EventLogSource, "Application");
+                }
+                string logMessage = "Failed to log message:\r\n" + message;
+                if (logMessage.Length > 30000) logMessage = logMessage.Substring(0, 29997) + "...";
+                EventLog.WriteEntry(EventLogSource, logMessage, EventLogEntryType.Error);
+            } catch { }
+        }
+
+        private static void sendToEventLog(Exception ex, string message) {
+            try {
+                string msg = string.Format("{0}\r\n\r\nOriginal Message:\r\n{1}", ex.ToString(), message);
+                sendToEventLog(msg);
+            } catch { }
+        }
+
+        private static void sendToEventLog(Exception ex, string format, params object[] args) {
+            try {
+                StringBuilder msg = new StringBuilder();
+                msg.AppendLine(ex.ToString());
+                msg.AppendLine();
+                msg.AppendLine("Original Message:");
+                msg.AppendLine(format);
+                if (args != null && args.Length > 0) {
+                    for (int i = 0; i < args.Length; i++) {
+                        object arg = args[i];
+                        msg.AppendFormat("{0}: {1}\r\n", i, arg == null ? "null" : arg.ToString());
+                    }
+                    msg.Length -= 2;
+                }
+                sendToEventLog(msg.ToString());
+            } catch { }
         }
     }
 }

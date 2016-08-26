@@ -254,8 +254,11 @@ namespace Babbacombe.Logger {
             foreach (var ass in AppDomain.CurrentDomain.GetAssemblies()) {
                 s.AppendFormat("Name: {0}", ass.FullName);
                 s.AppendLine();
-                s.AppendFormat("Location: {0}", ass.Location);
-                s.AppendLine();
+                try {
+                    // This can't be obtained for dynamic assemblies.
+                    s.AppendFormat("Location: {0}", ass.Location);
+                    s.AppendLine();
+                } catch (NotSupportedException) { }
                 if (ass.GlobalAssemblyCache) s.AppendLine("From GAC");
                 s.AppendFormat("CLR Version: {0}", ass.ImageRuntimeVersion);
                 s.AppendLine(); s.AppendLine();
